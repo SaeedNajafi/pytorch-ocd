@@ -1,11 +1,14 @@
 """
 Implementation of ocd modules.
 """
-
+# pylint: disable=E1101
+# pylint: disable=arguments-differ
+# pylint: disable=too-many-locals
 from typing import List, Optional
 
 import torch
 import torch.nn as nn
+from torch.distributions.categorical import Categorical
 import numpy as np
 
 LARGE_NUM = float(1e+8)
@@ -29,14 +32,13 @@ class OCD(nn.Module):
         vocab_size (int)
         tau (int)
     """
-    
     def __init__(self, vocab_size: int,
                  end_symbol_id: int,
                  tau: Optional[float] = None) -> None:
         if vocab_size <= 0:
             raise ValueError(f'invalid vocabulary size > 0: {vocab_size}')
         if end_symbol_id < 0:
-            raise ValueError(f'invalid end symbol index >=0: {end_symbol}')
+            raise ValueError(f'invalid end symbol index >=0: {end_symbol_id}')
         if tau and tau < 0:
             raise ValueError(f'invalid tau parameter >=0: {tau}')
 
@@ -45,12 +47,34 @@ class OCD(nn.Module):
         self.end_symbol_id = end_symbol_id
         self.tau = tau
 
+    def forward(self, model_scores: torch.FloatTensor,
+                gold_y: torch.LongTensor) -> torch.Tensor:
+        """ samples from the model_logits and returns the OCD loss.
+        Args:
+            model_scores (`~torch.FloatTensor`): ``(batch_size, sequence_lenght, vocab_size)``
+                                                 scores given by the model, scores before the log softmax.
+            gold_y (`~torch.LongTensor`): ``(batch_size, sequence_length)``
+        Returns:
+            `~torch.Tensor`: loss to backpropagate
+        """
+
+        b_sz, seq_len, vocab_size = model_scores.size()
+        assert vocab_size == self.vocab_size
+        log_probs = nn.functional.log_softmax(model_scores, dim=2)
+        dist = Categorical(logits=log_probs.view(-1, vocab_size))
+        # take one sample from the model.
+        sampled_y = dist.sample().view(b_sz, seq_len)
+        sampled_y_mask = OCD.sequence_mask(sampled_y, self.end_symbol_id)
+        q_values = OCD.edit_distance_q_values(sampled_y, gold_y,
+                                              self.end_symbol_id, self.vocab_size)
+        policy = OCD.compute_optimal_pi(q_values, self.tau)
+        return OCD.loss(policy, log_probs, sampled_y_mask)
+
     @staticmethod
     def sequence_mask(sequence: torch.LongTensor,
                       end_symbol_id: int) -> torch.ByteTensor:
         """ creates a mask tensor for the input 'sequence'.
         'end_symbol_id' indicates the end of sequence.
- 
         Args:
             sequence (`~torch.LongTensor`): ``(batch_size, sequence_length)``
             end_symbol_id (int)
@@ -82,7 +106,6 @@ class OCD(nn.Module):
                            end_symbol_id: int) -> torch.ByteTensor:
         """ creates a mask 3D tensor for the input 'sequence'.
         'end_symbol_id' indicates the end of sequence.
- 
         Args:
             sequence (`~torch.LongTensor`): ``(batch_size, sequence_length)``
             end_symbol_id (int)
@@ -103,13 +126,13 @@ class OCD(nn.Module):
                                    [0, 0, 0, 0, 1]],
 
                                   [[0, 0, 1, 1, 1],
-                                   [0, 0, 1, 1, 1], 
-                                   [0, 0, 1, 1, 1], 
+                                   [0, 0, 1, 1, 1],
+                                   [0, 0, 1, 1, 1],
                                    [0, 0, 1, 1, 1],
                                    [0, 0, 1, 1, 1]],
 
                                   [[0, 0, 0, 1, 1],
-                                   [0, 0, 0, 1, 1],     
+                                   [0, 0, 0, 1, 1],
                                    [0, 0, 0, 1, 1],
                                    [0, 0, 0, 1, 1],
                                    [0, 0, 0, 1, 1]]]
@@ -179,8 +202,8 @@ class OCD(nn.Module):
         """
         assert gold_y.size() == sampled_y.size()
         b_sz, seq_len = gold_y.size()
-        q_values = gold_y.new_zeros(b_sz, seq_len + 1, vocab_size).float()
-        edit_dists = gold_y.new_zeros(b_sz, seq_len + 1, seq_len + 1).float()
+        q_values = gold_y.new_zeros((b_sz, seq_len + 1, vocab_size), dtype=torch.float)
+        edit_dists = gold_y.new_zeros((b_sz, seq_len + 1, seq_len + 1), dtype=torch.float)
 
         # run batch version of the levenshtein algorithm
         edit_dists[:, :, 0] = torch.arange(seq_len + 1)
@@ -196,7 +219,7 @@ class OCD(nn.Module):
         # #
 
         # find gold next tokens and update their QValues
-        edit_dists_mask = OCD.edit_distance_mask(gold_y, end_symbol_id) 
+        edit_dists_mask = OCD.edit_distance_mask(gold_y, end_symbol_id)
         edit_dists = edit_dists.masked_fill_(edit_dists_mask, LARGE_NUM)
         min_dist, _ = edit_dists.min(dim=2)
         min_dist = min_dist.unsqueeze(dim=2)
@@ -210,7 +233,7 @@ class OCD(nn.Module):
         return q_values[:, :-1, :]  # ignore the step 'seq_len + 1'
 
     @staticmethod
-    def compute_optimal_pi(q_values: torch.FloatTensor, 
+    def compute_optimal_pi(q_values: torch.FloatTensor,
                            tau: Optional[float] = None) -> torch.FloatTensor:
         """ computing the optimal policy
         Args:
@@ -232,9 +255,9 @@ class OCD(nn.Module):
         return nn.functional.softmax(normalized_q_values, dim=2)
 
     @staticmethod
-    def ocd_loss(optimal_pi: torch.FloatTensor,
-                 model_log_probs: torch.FloatTensor,
-                 sampled_y_mask: torch.ByteTensor) -> torch.Tensor:
+    def loss(optimal_pi: torch.FloatTensor,
+             model_log_probs: torch.FloatTensor,
+             sampled_y_mask: torch.ByteTensor) -> torch.Tensor:
         """ ocd loss
         Args:
             optimal_pi (`~torch.FloatTensor`): ``(batch_size, sequence_length, vocab_size)``
@@ -246,8 +269,8 @@ class OCD(nn.Module):
             `~torch.Tensor`: loss to backpropagate
         """
         loss = nn.functional.kl_div(model_log_probs, optimal_pi, reduction='none')
-
+        loss = loss.sum(dim=2)
         # ignore steps after end_symbol
-        loss = loss * (1.0 - sampled_y_mask)
+        loss = loss * (1 - sampled_y_mask).float()
         loss = loss.sum(dim=1)
         return loss.mean(dim=0)
