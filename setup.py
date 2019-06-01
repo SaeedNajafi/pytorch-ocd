@@ -38,7 +38,7 @@ setup(
     author="'Saeed Najafi'",
     author_email="'snajafi@ualberta.ca'",
     url='https://github.com/SaeedNajafi/pytorch-ocd',
-    license='',
+    license='MIT',
     packages=find_packages(exclude=['docs', 'tests']),
     include_package_data=True,
     zip_safe=False,
