@@ -49,7 +49,7 @@ class OCD(nn.Module):
 
     def forward(self, model_scores: torch.FloatTensor,
                 gold_y: torch.LongTensor) -> torch.Tensor:
-        """ samples from the model_logits and returns the OCD loss.
+        """ samples from the model_scores and returns the OCD loss.
         Args:
             model_scores (`~torch.FloatTensor`): ``(batch_size, sequence_lenght, vocab_size)``
                                                  scores given by the model, scores before the log softmax.
