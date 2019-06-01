@@ -1,4 +1,4 @@
-""" setup.py - Main setup module for configuirng the development environment """
+""" setup.py - Main setup module for configuring the development environment """
 import os
 from setuptools import setup, find_packages
 
