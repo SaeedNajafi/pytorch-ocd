@@ -37,7 +37,7 @@ setup(
     keywords="'NLP'",
     author="'Saeed Najafi'",
     author_email="'snajafi@ualberta.ca'",
-    url='https://github.com/SaeedNajafi/OCD-Learning',
+    url='https://github.com/SaeedNajafi/pytorch-ocd',
     license='',
     packages=find_packages(exclude=['docs', 'tests']),
     include_package_data=True,
