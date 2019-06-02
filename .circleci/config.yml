@@ -1,0 +1,39 @@
+version: 2
+jobs:
+    Build:
+        working_directory: ~/pytorch-ocd/
+        docker:
+            - image: circleci/python:3.7
+        steps:
+            - checkout
+            - run: sudo chown -R circleci:circleci /usr/local/bin
+            - run: sudo chown -R circleci:circleci /usr/local/lib/python3.7/site-packages
+            - run:
+                name: install dependencies
+                command: |
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip uninstall ocd && pip install .
+            - run:
+                name: run tests
+                command: |
+                    . venv/bin/activate
+                    pytest tests/*py
+            - store_artifacts:
+                path: test-results
+                destination: test-reports
+    Lint:
+        docker:
+            - image: circleci/python:3.7
+        working_directory: ~/pytorch-ocd
+        steps:
+            - checkout
+            - run:
+                name: Install Linting Tools
+                command:
+                    sudo pip install pycodestyle
+            - run:
+                name: Pycodestyle Linting
+                command:
+                    pycodestyle --max-line-length=120 ./ocd/
+
