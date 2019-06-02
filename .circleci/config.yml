@@ -21,6 +21,6 @@ jobs:
                     pytest tests/*py
             - run:
                 name: pylinting
-                command:
+                command: |
                     . venv/bin/activate
-                    pylint ./ocd/
+                    pylint ./ocd/*py
