@@ -13,7 +13,7 @@ jobs:
                 command: |
                     python3 -m venv venv
                     . venv/bin/activate
-                    pip uninstall ocd && pip install -e .[dev]
+                    pip uninstall OCD && pip install -e .[dev]
             - run:
                 name: run tests
                 command: |
