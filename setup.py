@@ -34,7 +34,7 @@ setup(
     classifiers=[
         'Programming Language :: Python :: 3.7'
     ],
-    keywords="'NLP'",
+    keywords="'ML'",
     author="'Saeed Najafi'",
     author_email="'snajafi@ualberta.ca'",
     url='https://github.com/SaeedNajafi/pytorch-ocd',
