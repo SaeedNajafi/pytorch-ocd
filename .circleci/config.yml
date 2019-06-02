@@ -19,23 +19,7 @@ jobs:
                 command: |
                     . venv/bin/activate
                     pytest tests/*py
-    lint:
-        docker:
-            - image: circleci/python:3.7
-        working_directory: ~/pytorch-ocd
-        steps:
-            - checkout
             - run:
-                name: Install Linting Tools
+                name: pylinting
                 command:
-                    sudo pip install pycodestyle
-            - run:
-                name: Pycodestyle Linting
-                command:
-                    pycodestyle --max-line-length=120 ./ocd/
-workflows:
-    version: 2
-    standard:
-    jobs:
-        - build
-        - lint
+                    pylint ./ocd/
