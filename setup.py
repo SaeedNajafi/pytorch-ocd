@@ -14,6 +14,7 @@ INSTALL_REQUIRES = [
 
 DEV_REQUIREMENTS = [
     'pylint==1.8.2',
+    'pycodestyle==2.5.0',
     'pytest-cov==2.5.1',
     'pytest==3.6.1'
 ]

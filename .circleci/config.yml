@@ -20,7 +20,7 @@ jobs:
                     . venv/bin/activate
                     pytest tests/*py
             - run:
-                name: pylinting
+                name: linting
                 command: |
                     . venv/bin/activate
-                    pylint ./ocd/*py
+                    pycodestyle --max-line-length=120 ./ocd/*py
