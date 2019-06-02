@@ -4,6 +4,9 @@ source : https://arxiv.org/abs/1810.01398
 
 ## Requirements
 `python3`, `pytorch 1.0.0`
+</br>
+
+[![CircleCI](https://circleci.com/gh/SaeedNajafi/pytorch-ocd/tree/master.svg?style=svg)](https://circleci.com/gh/SaeedNajafi/pytorch-ocd/tree/master)
 
 ## Install
 ```sh
