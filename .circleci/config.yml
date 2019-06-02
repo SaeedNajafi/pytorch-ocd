@@ -19,9 +19,6 @@ jobs:
                 command: |
                     . venv/bin/activate
                     pytest tests/*py
-            - store_artifacts:
-                path: test-results
-                destination: test-reports
     lint:
         docker:
             - image: circleci/python:3.7
@@ -36,4 +33,9 @@ jobs:
                 name: Pycodestyle Linting
                 command:
                     pycodestyle --max-line-length=120 ./ocd/
-
+workflows:
+    version: 2
+    standard:
+    jobs:
+        - build
+        - lint
