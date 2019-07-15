@@ -10,7 +10,7 @@ source : https://arxiv.org/abs/1810.01398
 
 ## Install
 ```sh
-virtualenv env
+python3 -m venv env
 source env/bin/activate
 pip3 install .
 ```
