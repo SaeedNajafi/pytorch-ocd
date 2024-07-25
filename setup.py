@@ -8,7 +8,7 @@ VERSION = '0.1'
 
 # Publicly Available Packages (PyPi)
 INSTALL_REQUIRES = [
-    'torch==1.0.0',
+    'torch==2.2.0',
     'torchvision==0.2.1',
 ]
 
